@@ -14,3 +14,10 @@ tracing = "0.1.44"
 typed-eventbus = "0.2.1"
 uuid = "1.26.0"
 viewset = "0.4.0"
+
+[profile.release]
+opt-level = "z" # optimize for size
+lto = "fat" # link-time optimization
+codegen-units = 1 # slower compile, smaller binary
+panic = "abort" # no unwinding
+strip = true # strip symbols, Rust 1.78+

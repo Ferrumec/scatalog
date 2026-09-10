@@ -65,7 +65,7 @@ impl Handler for OnUpdate {
                     .update(&event.payload.id.clone(), event.payload)
                     .await
                 {
-                    tracing::error!("Failed to create item: {e}");
+                    tracing::error!("Failed to update item: {e}");
                 }
             }
             Err(e) => {
@@ -104,7 +104,8 @@ pub struct Module {
 }
 
 impl Module {
-    pub fn new(db: Pool<Postgres>) -> Self {
+    pub async fn new(db: Pool<Postgres>,nats:NatsEventStream,target:&str) -> Self {
+        subscribe(db.clone(), nats, &target).await;
         Self {
             repo: Data::new(db.into()),
         }
@@ -129,8 +130,7 @@ async fn main() -> std::io::Result<()> {
     let nats = NatsEventStream::new(&nats_url)
         .await
         .expect("could not connect to nats");
-    subscribe(pool.clone(), nats, &target).await;
-    let module = Arc::new(Module::new(pool));
+    let module = Arc::new(Module::new(pool,nats,&target).await);
 
     HttpServer::new(move || App::new().configure(|cfg| module.clone().config(cfg, "items")))
         .bind(("127.0.0.1", 8080))?
